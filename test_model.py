@@ -19,9 +19,9 @@ class GestureNet(nn.Module):
     def __init__(self, input_dim, num_classes):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(input_dim, 256), nn.BatchNorm1d(256), nn.ReLU(), nn.Dropout(0.35),
-            nn.Linear(256, 128),       nn.BatchNorm1d(128), nn.ReLU(), nn.Dropout(0.25),
-            nn.Linear(128, 64),        nn.ReLU(),
+            nn.Linear(input_dim, 256, bias=False), nn.BatchNorm1d(256), nn.ReLU(), nn.Dropout(0.35),
+            nn.Linear(256, 128, bias=False),       nn.BatchNorm1d(128), nn.ReLU(), nn.Dropout(0.25),
+            nn.Linear(128, 64),                    nn.ReLU(),
             nn.Linear(64, num_classes)
         )
 
@@ -33,7 +33,7 @@ class GestureNet(nn.Module):
 
 def load_model():
     m = GestureNet(cfg["input_dim"], cfg["num_classes"])
-    m.load_state_dict(torch.load("model.pth", map_location="cpu", weights_only=True))
+    m.load_state_dict(torch.load("model.pth", map_location="cpu", weights_only=False))
     m.eval()
     return m
 

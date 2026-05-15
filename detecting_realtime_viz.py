@@ -68,22 +68,21 @@ def brain_thread():
     weights = bg.collect_linear_weights(model)
     nodes   = bg.build_nodes(layers)
     lines, base_lc, w_abs, _ = bg.build_strongest_edges_balanced(
-        weights, layers, edges_per_layer=320   # more edges = more visible
+        weights, layers, edges_per_layer=320
     )
     base_lc = np.clip(base_lc, 0.0, 1.0)
     w_abs   = np.asarray(w_abs, dtype=np.float32)
     src_i   = lines[:, 0]
-    dst_i   = lines[:, 1]   # precomputed once
+    dst_i   = lines[:, 1]
     n_nodes, n_edges = len(nodes), len(lines)
     offs    = bg.layer_offsets(layers)
 
-    # Precompute per-layer edge masks so we don't recompute every frame
     layer_masks = [
         (src_i >= offs[li]) & (src_i < offs[li] + layers[li])
         for li in range(len(layers) - 1)
     ]
 
-    IDLE_COLOR = np.array([0.22, 0.35, 0.50])   # bright idle — visible in dark room
+    IDLE_COLOR = np.array([0.22, 0.35, 0.50])
     SPHERE_R   = 0.28
 
     sphere_mesh = o3d.geometry.TriangleMesh()
@@ -104,7 +103,6 @@ def brain_thread():
     vis.add_geometry(sphere_mesh)
     vis.add_geometry(ls)
 
-    # 3D text labels
     label_meshes = []
     for ni in range(layers[-1]):
         name   = le.classes_[ni] if ni < len(le.classes_) else str(ni)
@@ -137,17 +135,15 @@ def brain_thread():
     ALPHA  = 0.60
     min_dt = 1.0 / 30.0
     last_t = 0.0
-    # Pre-allocate arrays reused every frame
     final_colors    = np.empty((n_nodes, 3), dtype=np.float64)
-    color_buf       = np.empty((n_nodes, 3), dtype=np.float64)   # for values_to_colors
+    color_buf       = np.empty((n_nodes, 3), dtype=np.float64)
     all_vert_colors = np.empty((n_nodes * n_verts_per, 3), dtype=np.float64)
     edge_col        = np.full((n_edges, 3), 0.0, dtype=np.float64)
     flow_n          = np.zeros(n_edges, dtype=np.float32)
-    # Pre-tile label colors so we don't allocate each frame
     label_n_verts   = [len(m.vertices) if m is not None else 0 for m in label_meshes]
     col_dim         = [np.tile([0.50, 0.55, 0.85], (nv, 1)) for nv in label_n_verts]
     col_win         = [np.tile([0.0,  1.0,  0.5 ], (nv, 1)) for nv in label_n_verts]
-    prev_winner     = -2   # force first update
+    prev_winner     = -2
 
     while not _stop.is_set():
         if not vis.poll_events():
@@ -164,11 +160,9 @@ def brain_thread():
         smooth_vals += ALPHA * (target - smooth_vals)
         active       = float(smooth_vals.max()) > 1e-5
 
-        # Node colors — reuse color_buf and final_colors
         bg.values_to_colors_rgb01(smooth_vals, layers,
                                    output_layer_is_probability=(probs is not None),
                                    offs=offs, out=color_buf)
-        # smooth_vals already in [0,1] per-layer — use directly as boost
         b = smooth_vals[:, None].astype(np.float64)
         np.clip(color_buf * b * 2.0, 0, 1, out=final_colors)
         final_colors += IDLE_COLOR * (1.0 - b)
@@ -180,12 +174,10 @@ def brain_thread():
             np.clip(final_colors[offs[-1] + winner] * (1.6 + pulse), 0, 1,
                     out=final_colors[offs[-1] + winner])
 
-        # Expand to per-vertex colors using indexing (no temp allocation)
         all_vert_colors[:] = np.repeat(final_colors, n_verts_per, axis=0)
         sphere_mesh.vertex_colors = o3d.utility.Vector3dVector(all_vert_colors)
         vis.update_geometry(sphere_mesh)
 
-        # Label colors — only update when winner changes
         if winner != prev_winner:
             prev_winner = winner
             for ni, m in enumerate(label_meshes):
@@ -196,7 +188,6 @@ def brain_thread():
                 )
                 vis.update_geometry(m)
 
-        # Edge colors — reuse pre-allocated array
         if n_edges > 0:
             if active:
                 flow = w_abs * smooth_vals[src_i] * smooth_vals[dst_i]
@@ -206,8 +197,6 @@ def brain_thread():
                     if not mask.any():
                         continue
                     if li == last_mask_idx:
-                        # Last layer: use only src activation × weight
-                        # dst (output) brightness already shown by node color
                         f = w_abs[mask] * smooth_vals[src_i[mask]]
                     else:
                         f = flow[mask]
@@ -227,7 +216,8 @@ def brain_thread():
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
-HAND_CONNS = list(mp.solutions.hands.HAND_CONNECTIONS)   # precomputed once
+HAND_CONNS = list(mp.solutions.hands.HAND_CONNECTIONS)
+
 
 def put_text(img, text, pos, scale=0.6, color=(255,255,255), thickness=1):
     x, y = pos
@@ -237,7 +227,6 @@ def put_text(img, text, pos, scale=0.6, color=(255,255,255), thickness=1):
 
 def extract_features(detected, handedness):
     def hand_feat(hl):
-        # Go straight to numpy — no intermediate Python list of tuples
         lms   = np.array([[lm.x, lm.y, lm.z] for lm in hl.landmark], dtype=np.float32)
         wrist = lms[0]
         scale = np.linalg.norm(wrist[:2] - lms[12, :2]) + 1e-6
@@ -267,7 +256,7 @@ def inference_thread():
         if flat is None:
             time.sleep(0.002)
             continue
-        with torch.inference_mode():   # faster than no_grad
+        with torch.inference_mode():
             _flat_buf.copy_(torch.from_numpy(flat).unsqueeze(0))
             out, acts  = model(_flat_buf)
             probs_t    = torch.softmax(out, dim=1).cpu().numpy()[0]
@@ -298,7 +287,6 @@ try:
         if not ret:
             break
 
-        # Downscale first (cheaper), then convert color once for MediaPipe
         small  = cv2.resize(frame, (320, 240), interpolation=cv2.INTER_NEAREST)
         small  = cv2.cvtColor(small, cv2.COLOR_BGR2RGB)
         results = hands.process(small)

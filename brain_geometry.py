@@ -58,12 +58,6 @@ def build_strongest_edges_balanced(weights, layers, edges_per_layer=56):
     lc[sgn >= 0] = (0.22, 0.82, 0.98)
     lc[sgn <  0] = (0.98, 0.48, 0.42)
 
-    #pos_mask = sgn >= 0
-    #lines = lines[pos_mask]
-    #w_abs = w_abs[pos_mask]
-    #phase = phase[pos_mask]
-    #lc    = lc[pos_mask]
-
     return lines, lc, w_abs, phase
 
 

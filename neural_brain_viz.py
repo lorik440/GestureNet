@@ -13,16 +13,16 @@ class GestureNet(nn.Module):
     def __init__(self, input_dim, num_classes):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(input_dim, 256), nn.BatchNorm1d(256), nn.ReLU(), nn.Dropout(0.35),
-            nn.Linear(256, 128),       nn.BatchNorm1d(128), nn.ReLU(), nn.Dropout(0.25),
-            nn.Linear(128, 64),        nn.ReLU(),
+            nn.Linear(input_dim, 256, bias=False), nn.BatchNorm1d(256), nn.ReLU(), nn.Dropout(0.35),
+            nn.Linear(256, 128, bias=False),       nn.BatchNorm1d(128), nn.ReLU(), nn.Dropout(0.25),
+            nn.Linear(128, 64),                    nn.ReLU(),
             nn.Linear(64, num_classes)
         )
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = GestureNet(cfg["input_dim"], cfg["num_classes"]).to(device)
-model.load_state_dict(torch.load("model.pth", map_location=device))
+model.load_state_dict(torch.load("model.pth", map_location=device, weights_only=False))
 model.eval()
 
 layers  = bg.layer_sizes(cfg)

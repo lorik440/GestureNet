@@ -60,6 +60,7 @@ with open("data.csv", "a", newline="") as f:
 
         if row is not None:
             writer.writerow(row)
+            f.flush()
             count += 1
             time.sleep(0.12)
 
