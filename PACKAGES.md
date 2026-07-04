@@ -2,6 +2,13 @@
 
 This document explains the key packages used in the Gesture Recognition project.
 
+## Repository layout
+
+- `src/` — library modules (visualization helpers, geometry utilities).
+- `scripts/` — runnable scripts (data collection, training, detection, testing).
+- `data/` — dataset files (e.g. `data.csv`) or legacy `data.csv` at repo root.
+- `models/` — model artifacts (`model.pth`, `label_encoder.pkl`, `model_config.pkl`) or legacy root files.
+
 ---
 
 ## Core AI / Machine Learning

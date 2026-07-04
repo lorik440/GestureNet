@@ -171,24 +171,24 @@ The output node corresponding to the predicted gesture pulses at 3Hz using a sin
 
 | File | Purpose |
 |---|---|
-| `collect_data.py` | Record gesture samples from webcam to data.csv |
-| `training_model.py` | Train GestureNet on collected data |
-| `test_model.py` | Evaluate model accuracy with detailed statistics |
-| `detecting_realtime_viz.py` | Live detection + 3D neural network visualization |
-| `neural_brain_viz.py` | Static 3D view of the trained network structure |
-| `viz_backprop.py` | Animated forward + backward pass visualizer |
-| `brain_geometry.py` | Shared math for 3D node layout and edge selection |
-| `check_dataset.py` | Show sample counts per gesture in data.csv |
-| `delete_gesture.py` | Remove a gesture class from data.csv by name |
+| `scripts/collect_data.py` | Record gesture samples from webcam to `data/data.csv` (or appends to legacy `data.csv`). |
+| `scripts/training_model.py` | Train `GestureNet` on collected data and save artifacts to `models/` (or repo root). |
+| `scripts/test_model.py` | Evaluate model accuracy with detailed statistics using `models/` artifacts. |
+| `scripts/detecting_realtime_viz.py` | Live detection + 3D neural network visualization (uses `src/` visualization modules). |
+| `src/neural_brain_viz.py` | Static 3D view of the trained network structure (library module). |
+| `src/viz_backprop.py` | Animated forward + backward pass visualizer (library module). |
+| `src/brain_geometry.py` | Shared math for 3D node layout and edge selection (library module). |
+| `scripts/check_dataset.py` | Show sample counts per gesture in `data/data.csv` or legacy `data.csv`. |
+| `scripts/delete_gesture.py` | Remove a gesture class from the dataset by name. |
 
 ### Saved Files
 
 | File | Contents |
 |---|---|
-| `data.csv` | All collected training samples (126 features + label per row) |
-| `model.pth` | Trained neural network weights |
-| `label_encoder.pkl` | Maps gesture names ↔ integer class indices |
-| `model_config.pkl` | Stores input size and number of classes |
+| `data/data.csv` (or `data.csv`) | All collected training samples (126 features + label per row) |
+| `models/model.pth` (or `model.pth`) | Trained neural network weights |
+| `models/label_encoder.pkl` (or `label_encoder.pkl`) | Maps gesture names ↔ integer class indices |
+| `models/model_config.pkl` (or `model_config.pkl`) | Stores input size and number of classes |
 
 ---
 
